@@ -99,7 +99,7 @@ class CatheterRobotV1:
         self.bending_motor_1 = DynamixelMotor("X_SERIES", 1, self.portHandler, 1, 0, 200, 4096*2, reverse=True)
         self.bending_motor_2 = DynamixelMotor("X_SERIES", 2, self.portHandler, 1, 0, 200, 4096*2.5, reverse=True)
         self.rotation_motor = DynamixelMotor(
-            "X_SERIES", 3, self.portHandler, 2, 0, 50, safety_limit=4096 / 2.0 / 5.0 * 8
+            "X_SERIES", 3, self.portHandler, 2, 0, 50, safety_limit=4096 / 2.0 / 5.0 * 8, reverse=True
         )
         self.linear_motor = DynamixelMotor(
             "X_SERIES",
@@ -219,6 +219,11 @@ class CatheterRobotV1:
 
             self.rotation_motor.set_goal_velocity(rotation_goal_velocity)
 
+            # Camera control
+            if self.xbox.capture and self.has_camera:
+                self.camera.capture_frame()
+                self.xbox.capture = False
+            
             # Linear motion control
             # ---------------------
             if self.xbox.left:
