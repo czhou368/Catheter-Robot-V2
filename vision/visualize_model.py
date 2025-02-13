@@ -1,6 +1,6 @@
 import argparse
 
-from pcd_model import PointCloudModel
+from vision.pcd_model import PointCloudModel
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -19,12 +19,11 @@ def parse_args():
     return args
 
 
-def main():
-    args = parse_args()
-
+def SfM_visualization(input_model, input_format, cam_scale=0.25, segment=False, mask_path=None):
+    
     # read COLMAP model
     model = PointCloudModel()
-    model.read_model(args.input_model, ext=args.input_format)
+    model.read_model(input_model, ext=input_format)
 
     print("Number of cameras:", len(model.cameras))
     print("Number of images:", len(model.images))
@@ -33,14 +32,18 @@ def main():
     # display using Open3D visualization tools
     model.create_window()
     xyz, rgb = model.add_points()
-    # Segment point cloud using image segmentation information
-    # xyz, rgb = model.segment_points(xyz, rgb, 1, './Data/skull/masks/0003_mask.png')
-    # xyz, rgb = model.segment_points(xyz, rgb, 2, './Data/skull/masks/0006_mask.png')
+    if segment:
+        # Segment point cloud using image segmentation information
+        xyz, rgb = model.segment_points(xyz, rgb, 1, mask_path)
+        # xyz, rgb = model.segment_points(xyz, rgb, 2, mask_path)
+        
     model.points2o3d(xyz, rgb)
     print("Number of points after selection:", len(xyz))
-    model.add_cameras(scale=0.25)
+    model.add_cameras(scale=cam_scale)
     model.show()
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    
+    SfM_visualization(args.input_model, args.input_format)

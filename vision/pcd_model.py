@@ -1,6 +1,6 @@
 import numpy as np
 import open3d
-from read_write_model import qvec2rotmat, read_model
+from vision.read_write_model import qvec2rotmat, read_model
 import cv2
 
 
