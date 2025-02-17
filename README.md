@@ -15,7 +15,16 @@ cd ..
 git clone https://github.com/3DOM-FBK/deep-image-matching.git
 cd deep-image-matching
 pip install -e .
+cd ..
 ```
+* Intall SAM2
+```
+git clone https://github.com/facebookresearch/sam2.git && cd sam2
+pip install -e .
+cd ..
+```
+* Install pycolmapgs
+
 * Install pycolmap
 ```
 pip install pycolmap==3.10.0
@@ -24,12 +33,13 @@ pip install pycolmap==3.10.0
 ```
 pip install open3d==0.18.0
 ```
+
 * Go back to this project
 ```
-cd ../Monocular-Reconstruction
+cd ../Cathetor_Robot_v1.0
 ```
 
-## Run SfM
+<!-- ## Run SfM
 * Change ``dir = ""`` to your data directory (now defaultly set to the skull dataset)
 * Run ``python sfm.py``. This will take a while cuz the dataset contains 259 images. Please be patient^_^. Normally I will use only about 100 images and it will work fine. So basically this step uses the **deep-image-matching** library to detect and match the features, and give a reconstruction with **3D points** and **camera poses**.
 * If it works well, the results will be in your_dir/results_[configurations]. At this time you only need to look at models/0/ and reconstruction/.
@@ -47,4 +57,10 @@ I use labelme to manually get the segmentation annotations of the object. Labelm
 
 ## To do
 * Estimate the object pose (Point cloud center / RANSAC (if known 3D model))
-* Segmentation network
+* Segmentation network -->
+
+## Move Robot
+Connect the xbox series joystick and run ``python move_robot.py``
+
+## Reconstruction
+Run ``python reconstruction.py default``

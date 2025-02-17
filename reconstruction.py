@@ -7,7 +7,7 @@ import cv2
 
 RUN_SAM = 0
 RUN_SFM = 0
-RUN_VISUALIZATION = 1
+RUN_VISUALIZATION = 0
 RUN_GSPLAT = 1
 
 if __name__ == "__main__":
