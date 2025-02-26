@@ -16,7 +16,7 @@ if __name__ == "__main__":
         robot_parameters,
         DEVICENAME,
         use_bluetooth=False,
-        has_camera=True,
+        has_camera=False,
         cam_id=args.cam,
     )
 

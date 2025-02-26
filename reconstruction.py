@@ -5,10 +5,10 @@ from vision.gsplat import Config, run_gsplat
 import torch
 import cv2
 
-RUN_SAM = 0
+RUN_SAM = 1
 RUN_SFM = 0
-RUN_VISUALIZATION = 0
-RUN_GSPLAT = 1
+RUN_VISUALIZATION = 1
+RUN_GSPLAT = 0
 
 if __name__ == "__main__":
     # select the device for computation
