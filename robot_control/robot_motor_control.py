@@ -43,34 +43,15 @@ def safe_add(value, add_value, mininum, maximum):
     return value + add_value
 
 # Catheter Robot V1 has 4 DoFs
-class CatheterRobotV1:
+class MotorControlV1:
     def __init__(self, 
-                 structural_parameters, 
-                 # [ls, l1, lr, l2, le, d1, d2]
                  device_name="/dev/ttyUSB0",
                  bauld_rate=57600,
                  use_bluetooth=False,
                  xbox_refresh_rate=1000,
                  has_camera=True,
                  cam_id=4,
-                 ):
-        
-        # ls: length of the straight section (mm)
-        # l1: length of the first bending segment
-        # lr: length of the rigid segment
-        # l2: length of the second bending segment
-        # le: length of the end effector
-        # d1: diameter of the first bending segment
-        # d2: diameter of the second bending segment
-        
-        # Constant curvature assumption
-        self.parameter = structural_parameters
-        
-        # Four configuration components
-        self.theta1 = 0 # angle of the first bending segment (deg)
-        self.theta2 = 0 # angle of the second bending segment (deg)
-        self.l = 0 # insertion of the catheter (mm)
-        self.phi = 0 # rotation of the catheter (deg)     
+                 ): 
         
         self.has_camera = has_camera
         

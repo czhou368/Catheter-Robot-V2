@@ -1,4 +1,4 @@
-from robot_control.catheter_robot import CatheterRobotV1
+from robot_control.robot_motor_control import MotorControlV1
 import argparse
 
 if __name__ == "__main__":
@@ -12,13 +12,15 @@ if __name__ == "__main__":
 
     robot_parameters = [170, 50, 5, 40, 5, 4.0, 2.0]
 
-    catheter_robot = CatheterRobotV1(
-        robot_parameters,
+    
+    
+    motor_control = MotorControlV1(
+        # robot_parameters,
         DEVICENAME,
         use_bluetooth=False,
         has_camera=False,
         cam_id=args.cam,
     )
 
-    catheter_robot.start_process()
-    catheter_robot.end_process()
+    motor_control.start_process()
+    motor_control.end_process()
