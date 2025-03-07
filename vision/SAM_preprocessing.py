@@ -265,9 +265,13 @@ class SAMObjectTracker:
                 masked_image = mask_image * ori_image
 
                 if self.write_masks:
+                    if not os.path.isdir(self.dir + "/masks"):
+                        os.makedirs(self.dir + "/masks")
                     cv2.imwrite(self.dir + "/masks/%04d.png" % out_frame_idx, mask_image * 255)
                     print("Writing mask #%d" % out_frame_idx)
                 if self.write_segmented_images:
+                    if not os.path.isdir(self.dir + "/images"):
+                        os.makedirs(self.dir + "/images")
                     cv2.imwrite(
                         self.dir + "/images/%04d.png" % out_frame_idx, masked_image * 255
                     )

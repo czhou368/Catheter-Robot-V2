@@ -45,39 +45,49 @@ def getShape(y_cell):
 
 
 class CatheterRobotV1:
-    def __init__(self):
-
+    def __init__(self, 
+                 actuation=np.array([0, 0, 0, 0]),
+                 parameters=[170, 50, 5, 40, 5, 5.3, 3, 2.8, 2.5],
+                 E=[20e3, 2e3, 60e3, 2e3, 30e3, 60e3],
+                 G=[10e3, 1e3, 20e3, 1e3, 20e3],
+                 loads=np.zeros((3, 3))):
+        # parameters: [l1, l2, l3, l4, l5, dc_out, dc_in, dn_out, dn_in]
+        
         # Unit: N, mm
         self.p0 = np.array([0, 0, 0])
         self.R0 = np.eye(3)
 
+        self.parameters = parameters
+        self.E = E
+        self.G = G
+        
         # Catheter parameters
-        self.dc_out = 5.3
-        self.dc_in = 3
-        self.l1 = 170  # Catheter channel part (partially rigid)
-        self.l2 = 50  # Bending part (flexible)
-        self.l3 = 5  # Straight part (rigid)
+        self.dc_out = parameters[5]
+        self.dc_in = parameters[6]
+        self.l1 = parameters[0]  # Catheter channel part (partially rigid)
+        self.l2 = parameters[1]  # Bending part (flexible)
+        self.l3 = parameters[2]  # Straight part (rigid)
 
         # Nitinol tube parameters
-        self.dn_out = 2.8
-        self.dn_in = 2.5
-        self.l4 = 40  # Nitinol tube part (flexible)
-        self.l5 = 5  # Straight end (rigid)
+        self.dn_out = parameters[7]
+        self.dn_in = parameters[8]
+        self.l4 = parameters[3]  # Nitinol tube part (flexible)
+        self.l5 = parameters[4]  # Straight end (rigid)
 
         self.total_length = self.l1 + self.l2 + self.l3 + self.l4 + self.l5
 
         # Young's modules & torsional stiffness (N/mm^2)
-        self.E1 = 30 * 1e3
-        self.E2 = 2 * 1e3
-        self.E3 = 60 * 1e3
-        self.E4 = 2 * 1e3
-        self.E5 = 60 * 1e3
+        self.E1 = E[0]
+        self.E2 = E[1]
+        self.E3 = E[2]
+        self.E4 = E[3]
+        self.E5 = E[4]
 
-        self.G1 = 20 * 1e3
-        self.G2 = 1 * 1e3
-        self.G3 = 25 * 1e3
-        self.G4 = 1 * 1e3
-        self.G5 = 25 * 1e3
+        self.G1 = G[0]
+        self.G2 = G[1]
+        self.G3 = G[2]
+        self.G4 = G[3]
+        self.G5 = G[4]
 
         self.I1 = math.pi / 64.0 * (self.dc_out**4 - self.dc_in**4)
         self.J1 = 2 * self.I1
@@ -102,14 +112,14 @@ class CatheterRobotV1:
 
         self.u_star = np.array([[0, 0, 0]]).transpose()
 
-        self.loads = np.zeros((3, 3))  # f1_body, f4_body, F_endpoint
+        self.loads = loads  # f1_body, f4_body, F_endpoint
 
-        self.ini_guess = np.zeros((10, 1))
-        self.ini_sol = self.ini_guess
+        self.last_sol = np.zeros((10, 1))
+        self.ini_sol = np.zeros((10, 1))
 
         self.state_traj = []
 
-        self.actuation = np.array([0, 0, 0, 0])
+        self.actuation = actuation
 
     def fk_shooting(self, actuation=None, loads=None, ini_guess=None):
         if actuation is not None:

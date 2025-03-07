@@ -11,12 +11,14 @@ class XboxController(threading.Thread):
             1.0 / refreshRate
         )  # joystick refresh is to be performed 30 times per sec by default
         #
-        # self.left_stick_x = 0
+        self.left_stick_x = 0
         self.left_stick_y = 0
         self.last_left_stick_y = 0
-        # self.right_stick_x = 0
+        self.last_left_stick_x = 0
+        self.right_stick_x = 0
         self.right_stick_y = 0
         self.last_right_stick_y = 0
+        self.last_right_stick_x = 0
         self.a = 0
         self.b = 0
         self.x = 0
@@ -59,12 +61,12 @@ class XboxController(threading.Thread):
     # Deadzone is +/- range of values to consider to be center stick (ie. 0.0)
     def axisScale(self, raw, deadzone, last_value=0, range=(-32768.0, 32767.0)):
         if raw >= 0:
-            if abs(raw) < deadzone or (last_value - raw > range[1] / 200):
+            if abs(raw) < deadzone or (last_value - raw > range[1] / 500):
                 return 0.0
             else:
                 return (raw - deadzone) / (range[1] - deadzone)
         else:
-            if abs(raw) < deadzone or (last_value - raw < range[1] / 200):
+            if abs(raw) < deadzone or (last_value - raw < range[1] / 500):
                 return 0.0
             else:
                 return (raw + deadzone) / (-range[0] + deadzone)
@@ -125,6 +127,14 @@ class XboxController(threading.Thread):
                 self.last_left_stick_y = event.state
                 # print("Left Stick Y: ", self.left_stick_y)
 
+            # Fisrt Segment Bending
+            elif event.code == "ABS_X":
+                self.left_stick_x = -self.axisScale(
+                    event.state, 4000, last_value=self.last_left_stick_x
+                )
+                self.last_left_stick_x = event.state
+                # print("Left Stick X: ", self.left_stick_x)
+            
             # Second Segment Bending
             elif event.code == "ABS_RY":
                 self.right_stick_y = -self.axisScale(
@@ -132,7 +142,14 @@ class XboxController(threading.Thread):
                 )
                 self.last_right_stick_y = event.state
                 # print("Right Stick Y: ", self.right_stick_y)
-        
+            
+            elif event.code == "ABS_RX":
+                self.right_stick_x = -self.axisScale(
+                    event.state, 4000, last_value=self.last_right_stick_x
+                )
+                self.last_right_stick_x = event.state
+                # print("Right Stick X: ", self.right_stick_x)
+                
         elif event.ev_type == "Key":
             # Button A
             if event.code == "BTN_SOUTH":

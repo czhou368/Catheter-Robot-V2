@@ -1,15 +1,12 @@
 import numpy as np
-import open3d as o3d
-from catheter_robot import CatheterRobotV1
+from modeling.catheter_robot import CatheterRobotV1
+import matplotlib
+matplotlib.use('tkagg')
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
+import matlab.engine
 import numpy as np
-import scipy.interpolate as interp
-import matplotlib.pyplot as plt
-from scipy.interpolate import CubicSpline
 
-def plot_segment(ax, points, radius, color=[0.7, 0.7, 0.7], circle_density=30):
+def plot_segment(ax, points, radius, color=[0.7, 0.7, 0.7], circle_density=20):
     # points: 4x4xn
     num = points.shape[2]  # Number of points on the central curve
     # print(points[:, :, 0])
@@ -23,11 +20,11 @@ def plot_segment(ax, points, radius, color=[0.7, 0.7, 0.7], circle_density=30):
         0, 2 * np.pi, circle_density
     )  # Circle points in the radial direction
 
-    tangent_vectors = points[0:3, 2, :].transpose()
+    tangent_vectors = points[0:3, 2, :].T
     # print(tangent_vectors)
     # print(tangent_vectors.shape)
     # Normal vectors: cross product of the tangent with an arbitrary vector (e.g., z-axis)
-    normal_vectors = np.cross(tangent_vectors, np.array([0, 0, 1]))
+    normal_vectors = np.cross(tangent_vectors, np.array([1, 1, 0]))
     # Compute the norms of the normal_vectors
     norms = np.linalg.norm(normal_vectors, axis=1)
 
@@ -199,17 +196,39 @@ def plot_CatheterRobotV1(robot: CatheterRobotV1, segments):
 #     return tube_mesh
 
 if __name__ == "__main__":
-    robot = CatheterRobotV1()
-    robot.actuation = np.array([3, -3, 0, 0])
-    shape, ini10_sol, res, results = robot.fk_shooting()
+    # Start MATLAB engine
+    eng = matlab.engine.start_matlab()
 
-    print("Seg1 tip position:", results['p'][0][:, -1])
-    print("Seg2 tip position:", results['p'][1][:, -1])
-    print("Seg3 tip position:", results['p'][2][:, -1])
-    print("Seg4 tip position:", results['p'][3][:, -1])
-    print("Seg5 tip position:", results['p'][4][:, -1])
-    print("Residuals:", res)
-    # print(results['g'][0].shape)
-    plot_CatheterRobotV1(robot, results['g'])
+    eng.addpath("../matlab")
+    eng.addpath("../matlab/math_utils")
+    eng.addpath("../matlab/plot_utils")
+
+    actuations = [2, -2, 1, -1]
+    robot_parameter = [170, 50, 5, 40, 5, 5.3, 3.0, 2.8, 2.5]
+    E = [60e3, 2e3, 60e3, 2e3, 60e3]
+    G = [20e3, 1e3, 20e3, 1e3, 20e3]
+    loads = np.zeros((3, 3))
+
+    robot = CatheterRobotV1(actuation=actuations,
+                            parameters=robot_parameter,
+                            E=E,
+                            G=G,
+                            loads=loads)
+    
+    sol, results, res = eng.forward_kinematics(
+        matlab.double(actuations),
+        matlab.double(robot_parameter),
+        matlab.double(E),
+        matlab.double(G),
+        matlab.double(loads.tolist()),
+        nargout=3,
+    )
+    
+    points = []
+    
+    for frames in results['g']:
+        points.append(np.array(frames))
+    
+    plot_CatheterRobotV1(robot, points)
     
     

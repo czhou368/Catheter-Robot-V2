@@ -40,9 +40,9 @@ class Parser:
         self.normalize = normalize
         self.test_every = test_every
 
-        colmap_dir = os.path.join(data_dir, "sparse/0/")
+        colmap_dir = os.path.join(data_dir, "sfm/models/0/")
         if not os.path.exists(colmap_dir):
-            colmap_dir = os.path.join(data_dir, "sparse")
+            colmap_dir = os.path.join(data_dir, "sfm/models")
         assert os.path.exists(
             colmap_dir
         ), f"COLMAP directory {colmap_dir} does not exist."

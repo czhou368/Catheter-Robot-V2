@@ -5,10 +5,10 @@ from vision.gsplat import Config, run_gsplat
 import torch
 import cv2
 
-RUN_SAM = 1
+RUN_SAM = 0
 RUN_SFM = 0
-RUN_VISUALIZATION = 1
-RUN_GSPLAT = 0
+RUN_VISUALIZATION = 0
+RUN_GSPLAT = 1
 
 if __name__ == "__main__":
     # select the device for computation
@@ -26,7 +26,7 @@ if __name__ == "__main__":
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
     
-    dir = "./Data/puppy_w_distraction"
+    dir = "./Data/test_1"
     
     if RUN_SAM:
         # create the SAM object tracker

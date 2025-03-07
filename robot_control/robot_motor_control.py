@@ -1,12 +1,15 @@
 import numpy as np
-from robot_control.xbox_control import XboxController
-from robot_control.xbox_control_pygame import XboxControllerBluetooth
+# from robot_control.xbox_control import XboxController
+# from robot_control.xbox_control_pygame import XboxControllerBluetooth
 from robot_control.motor_control import DynamixelMotor
 from dynamixel_sdk import *
 import math
 import cv2
 
 from robot_control.camera_control import MicroCamera
+from modeling.catheter_robot import CatheterRobotV1
+from modeling.draw_robot import plot_CatheterRobotV1
+import matlab
 
 MAX_VELOCITY_LINEAR = 5  # mm/s
 MIN_VELOCITY_LINEAR = -5
@@ -45,6 +48,8 @@ def safe_add(value, add_value, mininum, maximum):
 # Catheter Robot V1 has 4 DoFs
 class MotorControlV1:
     def __init__(self, 
+                 robot:CatheterRobotV1,
+                 eng,
                  device_name="/dev/ttyUSB0",
                  bauld_rate=57600,
                  use_bluetooth=False,
@@ -52,6 +57,8 @@ class MotorControlV1:
                  has_camera=True,
                  cam_id=4,
                  ): 
+        self.robot = robot
+        self.eng = eng
         
         self.has_camera = has_camera
         
@@ -72,13 +79,16 @@ class MotorControlV1:
             exit()
         
         if use_bluetooth:
+            from robot_control.xbox_control_pygame import XboxControllerBluetooth
             self.xbox = XboxControllerBluetooth(refreshRate=xbox_refresh_rate)
         else:
+            from robot_control.xbox_control import XboxController
             self.xbox = XboxController(refreshRate=xbox_refresh_rate)
         
+        
         # Initialize the motors
-        self.bending_motor_1 = DynamixelMotor("X_SERIES", 1, self.portHandler, 1, 0, 200, 4096*2, reverse=True)
-        self.bending_motor_2 = DynamixelMotor("X_SERIES", 2, self.portHandler, 1, 0, 200, 4096*2.5, reverse=True)
+        self.bending_motor_1 = DynamixelMotor("X_SERIES", 1, self.portHandler, 1, 0, 200, 4096*(robot.dc_in + robot.dc_out)/2, reverse=True)
+        self.bending_motor_2 = DynamixelMotor("X_SERIES", 2, self.portHandler, 1, 0, 200, 4096*(robot.dn_in + robot.dn_out)/2, reverse=True)
         self.rotation_motor = DynamixelMotor(
             "X_SERIES", 3, self.portHandler, 2, 0, 50, safety_limit=4096 / 2.0 / 5.0 * 8, reverse=True
         )
@@ -95,16 +105,15 @@ class MotorControlV1:
 
         self.capture_num = 0
         self.cam_id = cam_id
+    
     def end_process(self):
 
-        
         self.xbox.join()
         
         if self.has_camera:
             self.camera.stop()
             self.camera.join()
             
-
         del self.linear_motor
         del self.rotation_motor
         del self.bending_motor_1
@@ -115,6 +124,18 @@ class MotorControlV1:
         print("Xbox control ended! Port closed.")
         print("-----------------------------------")
     
+    def read_bending_actuations(self):
+        self.bending_motor_1.get_current_position(print_message=False)
+        self.bending_motor_2.get_current_position(print_message=False)
+
+        motor_1_offset = self.bending_motor_1.dxl_home_position - self.bending_motor_1.dxl_present_position
+        motor_2_offset = self.bending_motor_2.dxl_home_position - self.bending_motor_2.dxl_present_position
+        
+        actuation_1 = motor_1_offset / 4096 * 2
+        actuation_2 = motor_2_offset / 4096 * 2
+        
+        self.robot.actuation = np.array([actuation_1, -actuation_1, actuation_2, -actuation_2])
+        
     def reset_motors(self):
         
         self.linear_motor.disable_torque(print_message=False)
@@ -175,7 +196,7 @@ class MotorControlV1:
             # ---------------------
             self.bending_motor_1.set_goal_velocity(
                 round(
-                    self.xbox.left_stick_y * MAX_VELOCITY_BENDING_1 * BENDING_VELOCITY_FACTOR_1
+                    self.xbox.left_stick_x * MAX_VELOCITY_BENDING_1 * BENDING_VELOCITY_FACTOR_1
                 )
             )
 
@@ -297,6 +318,33 @@ class MotorControlV1:
                         break
                     time.sleep(0.1)
 
-
+            # Read current actuations
+            self.read_bending_actuations()
+            
+            if self.xbox.x:
+                
+                # print("Actuation:", self.robot.actuation)
+                
+                sol, results, res = self.eng.forward_kinematics(
+                    matlab.double(self.robot.actuation),
+                    matlab.double(self.robot.parameters),
+                    matlab.double(self.robot.E),
+                    matlab.double(self.robot.G),
+                    matlab.double(self.robot.loads.tolist()),
+                    matlab.double(self.robot.last_sol),
+                    nargout=3,
+                )
+                
+                self.robot.last_sol = np.array(sol).reshape((10, 1))
+                
+                points = []
+                
+                for frames in results['g']:
+                    points.append(np.array(frames))
+                
+                plot_CatheterRobotV1(self.robot, points)
+                
+                self.xbox.x = False
+            
     def forward_kinematics(self):
         pass
