@@ -5,7 +5,7 @@ import matlab
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--has_cam", help="whether open camera or not", default=True)
+    parser.add_argument("--has_cam", help="whether open camera or not", default=False, action="store_true")
     parser.add_argument("--cam", help="choose camera device id", type=int, default=4)
     
     

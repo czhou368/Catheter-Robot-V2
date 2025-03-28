@@ -196,7 +196,7 @@ class MotorControlV1:
             # ---------------------
             self.bending_motor_1.set_goal_velocity(
                 round(
-                    self.xbox.left_stick_x * MAX_VELOCITY_BENDING_1 * BENDING_VELOCITY_FACTOR_1
+                    self.xbox.left_stick_y * MAX_VELOCITY_BENDING_1 * BENDING_VELOCITY_FACTOR_1
                 )
             )
 
@@ -346,5 +346,140 @@ class MotorControlV1:
                 
                 self.xbox.x = False
             
+    def forward_kinematics(self):
+        pass
+    
+# Manually given actuation trajectory
+class MotorControlTrajV1:
+    def __init__(self, 
+                 robot:CatheterRobotV1,
+                 actuation_traj:np.array,
+                 device_name="/dev/ttyUSB0",
+                 bauld_rate=57600,
+                 has_camera=True,
+                 cam_id=4,
+                 ): 
+        self.robot = robot
+        
+        self.has_camera = has_camera
+        
+        self.portHandler = PortHandler(device_name)
+        
+        # Open port
+        if self.portHandler.openPort():
+            print("Succeeded to open the port")
+        else:
+            print("Failed to open the port")
+            exit()
+
+        # Set port baudrate
+        if self.portHandler.setBaudRate(bauld_rate):
+            print("Succeeded to change the baudrate\n-----------------------------------")
+        else:
+            print("Failed to change the baudrate")
+            exit()
+        
+        
+        # Initialize the motors
+        self.bending_motor_1 = DynamixelMotor("X_SERIES", 1, self.portHandler, 1, 0, 200, 4096*(robot.dc_in + robot.dc_out)/4, reverse=True)
+        self.bending_motor_2 = DynamixelMotor("X_SERIES", 2, self.portHandler, 1, 0, 200, 4096*(robot.dn_in + robot.dn_out)/4, reverse=True)
+        self.rotation_motor = DynamixelMotor(
+            "X_SERIES", 3, self.portHandler, 2, 0, 50, safety_limit=4096 / 2.0 / 5.0 * 8, reverse=True
+        )
+        self.linear_motor = DynamixelMotor(
+            "X_SERIES",
+            4,
+            self.portHandler,
+            2,
+            int(DEFAULT_VELOCITY_LINEAR * LINEAR_VELOCITY_FACTOR),
+            400,
+            safety_limit=4096 * 50 / 5.0,
+            reverse=True,
+        )
+
+        self.capture_num = 0
+        self.cam_id = cam_id
+
+        self.actuations = actuation_traj
+        
+    def end_process(self):
+        
+        if self.has_camera:
+            self.camera.stop()
+            self.camera.join()
+            
+        del self.linear_motor
+        del self.rotation_motor
+        del self.bending_motor_1
+        del self.bending_motor_2
+        self.portHandler.closePort()
+        
+        print("-----------------------------------")
+        print("Motor control ended! Port closed.")
+        print("-----------------------------------")
+
+    
+    def send_bending_actuations(self):
+        self.bending_motor_1.set_goal_position(
+            round(self.robot.actuation[0] / 2 * 4096 + self.bending_motor_1.dxl_home_position)
+        )
+        self.bending_motor_2.set_goal_position(
+            round(self.robot.actuation[2] / 2 * 4096 + self.bending_motor_2.dxl_home_position)
+        )
+    
+    def reset_motors(self):
+        
+        self.linear_motor.disable_torque(print_message=False)
+        self.linear_motor.set_to_extended_position_control_mode(print_message=False)
+        self.linear_motor.enable_torque(print_message=False)
+
+        self.rotation_motor.disable_torque(print_message=False)
+        self.rotation_motor.set_to_extended_position_control_mode(print_message=False)
+        self.rotation_motor.enable_torque(print_message=False)
+
+        self.bending_motor_1.disable_torque(print_message=False)
+        self.bending_motor_1.set_to_extended_position_control_mode(print_message=False)
+        self.bending_motor_1.enable_torque(print_message=False)
+
+        self.bending_motor_2.disable_torque(print_message=False)
+        self.bending_motor_2.set_to_extended_position_control_mode(print_message=False)
+        self.bending_motor_2.enable_torque(print_message=False)
+    
+    def start_process(self):
+        
+        self.reset_motors()
+        
+        print("-----------------------------------") 
+        print("Motors are ready!")  
+        print("-----------------------------------")
+
+        if self.has_camera:
+            self.camera = MicroCamera(dev_id=self.cam_id)
+            self.camera.start()
+            print("-----------------------------------") 
+            print("Camera is ready!")  
+            print("-----------------------------------")
+            
+        
+        for i in range(self.actuations.shape[0]):
+            
+            self.robot.actuation = self.actuations[i]
+            self.send_bending_actuations()
+            print(i+1, '/', self.actuations.shape[0], "actuation:", self.robot.actuation)
+            # time.sleep(3)
+            
+            key = input("Press h to home, any other key to continue... ").strip().upper()
+            if key == 'H':
+                break
+            
+        self.bending_motor_1.home()
+        self.bending_motor_2.home()
+        
+        print("-----------------------------------") 
+        print("Actuations finished. Homing the motors!")  
+        print("-----------------------------------")
+        
+        time.sleep(3)
+        
     def forward_kinematics(self):
         pass

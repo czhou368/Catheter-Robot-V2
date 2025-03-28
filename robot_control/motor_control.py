@@ -316,7 +316,7 @@ class DynamixelMotor:
                 print("Set velocity control mode for motor %d" % self.DXL_ID)
 
             self.set_velocity_limit(self.dxl_velocity_limit)
-
+    
     def set_to_extended_position_control_mode(self, print_message=True):
         # self.disable_torque()
         dxl_comm_result, dxl_error = self.packetHandler.write1ByteTxRx(
