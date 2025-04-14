@@ -1,6 +1,6 @@
-from robot_control.robot_motor_control import MotorControlV1
+from control.robot_motor_control import MotorControlV2
 import argparse
-from modeling.catheter_robot import CatheterRobotV1
+from robot.catheter_robot_v2 import CatheterRobotV2
 import matlab
 
 if __name__ == "__main__":
@@ -11,24 +11,17 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    DEVICENAME = "/dev/ttyUSB0"  # Check which port is being used on your controller
+    DEVICENAME_1 = "/dev/ttyUSB0"  # Check which port is being used on your controller
     # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
 
-    robot = CatheterRobotV1(parameters=[172, 40, 10, 40, 10, 5.2, 3, 4.0, 2.8])
+    DEVICENAME_2 = "/dev/ttyUSB0"
     
-    # Start MATLAB engine
-    eng = matlab.engine.start_matlab()
+    robot = CatheterRobotV2()
 
-    eng.addpath("./matlab/ChangBot")
-    eng.addpath("./matlab/ChangBot/mathUtil")
-    eng.addpath("./matlab/ChangBot/plotFunc")
     
-    
-    motor_control = MotorControlV1(
+    motor_control = MotorControlV2(
         robot,
-        eng,
-        DEVICENAME,
-        use_bluetooth=False,
+        [DEVICENAME_1, DEVICENAME_2],
         has_camera=args.has_cam,
         cam_id=args.cam,
     )
